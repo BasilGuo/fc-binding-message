@@ -16,12 +16,12 @@ v: 3
 #  - unicorn
 #  - sparkling distributed ledger
 venue:
-  # group: WG
-  # type: Working Group
-  # mail: WG@example.com
-  # arch: https://example.com/WG
-  github: USER/REPO
-  latest: https://example.com/LATEST
+#  group: WG
+#  type: Working Group
+#  mail: WG@example.com
+#  arch: https://example.com/WG
+  github: "BasilGuo/fc-binding-message"
+  latest: "https://BasilGuo.github.io/fc-binding-message/draft-xu-fc-binding-message.html"
 
 author:
   -
