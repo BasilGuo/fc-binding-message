@@ -343,7 +343,7 @@ BM_{65536, 65539}:
 
 When one AS receives one BGP-UPDATE, it MUST do as usual: filter the BGP route using its local policy, scratch the BGP route to its Route Information Base (RIB) table, generate Forwarding Information Base (FIB) table, and send it out as per the routing policy.
 
-When the BM and FC signed objects synchronize from the RPKI repository, the BGP speaker MUST first verify FCs. According the verified FCs, the router then could verify the BMs. It SHOULD find FCList by the id field of one BM. Then it gets all the FCIDs in the FCList. Based on previous verified FCs, it could know which prefix is received as it announces. 
+When the BM and FC signed objects synchronize from the RPKI repository, the BGP speaker MUST first verify FCs. According the verified FCs, the router then could verify the BMs. It SHOULD find FCList by the id field of one BM. Then it gets all the FCIDs in the FCList. Based on previous verified FCs, it could know which prefix is received as it announces.
 
 It is RECOMMENDed to delete all the invalid RIB items to instruct the traffic forwarding. If all the BMs are valid, the forwarding plane would be a valid one and path verification is complete.
 
