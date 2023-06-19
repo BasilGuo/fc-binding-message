@@ -74,6 +74,20 @@ informative:
           - name: Yangfei Guo
           - name: Jiangou Zhan
           - name: Jianping Wu
+    X.680:
+      title: "Information technology -- Abstract Syntax Notation One (ASN.1): Specification of basic notation"
+      target: "https://itu.int/rec/T-REC-X.680-202102-I/en"
+      date: Feb. 2021
+      author:
+        - ins: ITU-T
+      seriesinfo: "Recommendation ITU-T X.680"
+    X.690:
+      title: "Information technology - ASN.1 encoding rules: Specification of Basic Encoding Rules (BER), Canonical Encoding Rules (CER) and Distinguished Encoding Rules (DER)"
+      target: "[https://itu.int/rec/T-REC-X.680-202102-I/en](https://www.itu.int/rec/T-REC-X.690-202102-I/en)"
+      date: Feb. 2021
+      author:
+        - ins: ITU-T
+      seriesinfo: "Recommendation ITU-T X.690"
 
 --- abstract
 
