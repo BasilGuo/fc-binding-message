@@ -149,9 +149,8 @@ id-ct-BM OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840)
 ct-BM CONTENT-TYPE ::=
     { TYPE ForwardingCommitmentAttestation IDENTIFIED BY id-ct-BM }
 
-ForwardingCommitmentAttestation ::= SEQUENCE {
+BindingMessageAttestation ::= SEQUENCE {
     version [0]         INTEGER DEFAULT 0,
-    version
     asidS               ASID,
     prefixS             SEQUENCE (SIZE(1..MAX)) OF Prefix,
     prefixD             SEQUENCE (SIZE(1)) OF Prefix,
