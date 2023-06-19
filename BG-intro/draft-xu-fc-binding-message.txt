@@ -1,0 +1,273 @@
+
+
+
+
+Network Working Group                                              K. Xu
+Internet-Draft                                                   X. Wang
+Intended status: Standards Track                     Tsinghua University
+Expires: 21 December 2023                                         Y. Guo
+                                                  Zhongguancun Labratory
+                                                                 J. Zhan
+                                                                   J. Wu
+                                                     Tsinghua University
+                                                            19 June 2023
+
+
+                  A Profile for Binding Messages (BMs)
+                   draft-xu-fc-binding-message-latest
+
+Abstract
+
+   This documents defines a standard profile for Binding Messages (BM)
+   used in Resource Public Key Infrastructure (RPKI).  A BM is a
+   digitally signed object that provides a means of verifying that an IP
+   address prefix announced from AS a to AS b and selected by AS b.
+   When validated, a BM's eContent can be used for detection and
+   mitigation of route hijacking and provide protection for the AS_PATH
+   attribute in BGP-UPDATE.
+
+About This Document
+
+   This note is to be removed before publishing as an RFC.
+
+   The latest revision of this draft can be found at
+   https://BasilGuo.github.io/fc-binding-message/draft-xu-fc-binding-
+   message.html.  Status information for this document may be found at
+   https://datatracker.ietf.org/doc/draft-xu-fc-binding-message/.
+
+   Source for this draft and an issue tracker can be found at
+   https://github.com/BasilGuo/fc-binding-message.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 21 December 2023.
+
+Copyright Notice
+
+   Copyright (c) 2023 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction
+     1.1.  Requirements Language
+   2.  BM Validation
+   3.  BM based BGP Path Verification
+     3.1.  BM Generation
+     3.2.  BM Verification and Path Verification
+   4.  Security Considerations
+   5.  IANA Considerations
+   6.  References
+     6.1.  Normative References
+     6.2.  Informative References
+   Acknowledgments
+   Authors' Addresses
+
+1.  Introduction
+
+   The Border Gateway Protocol (BGP) [RFC4271] was designed with no
+   mechanisms to validate the security of BGP attributes.  There are two
+   types of BGP security issues, BGP Hijacks and BGP Route Leaks
+   [RFC7908], plagues Internet security.
+
+   The primary purpose of the Resource Public Key Infrastructure (RPKI)
+   is to improve routing security (See [RFC6480] for more information).
+   As part of this system, a mechanism is needed to allow a BGP router
+   to select and verify that a prefix is announced from and followed the
+   path that it said itself.  And the router could also filter traffic
+   according to this policy in the data plane.  A Binding Message
+   provides this function.
+
+   Binding Message (BM) is a signed object that binds the IP prefix with
+   its announced AS's Paths, eventually, it could compose, verify, and
+   protect the forwarding path of traffic.  It should together use with
+   Forwarding Commitments [FC] which is a signed object used in the
+   control plane to protect BGP routing.  BM is used for concatenating
+   all ASes on the announced path.  It means that FC should provide the
+   relationship between one IP prefix in a BGP-UPDATE message and the
+   original announced AS, while BM should list all the generated FCs for
+   one IP prefix in a BGP-UPDATE message.  The generated Binding Message
+   is split into two parts, one for the BM body (BM-body) which is a
+   newly signed object, and the other for the BM message (BM-msg) which
+   would be sent to all ASes in the reverse direction of related IP
+   prefix propagation.
+
+   The BM-body uses the template for RPKI digitally signed objects
+   [RFC6488] for the definition of a Cryptographic Message Syntax (CMS)
+   [RFC5652] wrapper for the BM-body content as well as a generic
+   validation procedure for RPKI signed objects.  As BM-body needs to be
+   validated with RPKI certificates issued by the current
+   infrastructure, we assume the mandatory-to-implement algorithms in
+   [RFC6485], or its successor.
+
+   To complete the specification of the FC (see Section 4 of [RFC6488]),
+   this document defines:
+
+   1.  The object identifier (OID) that identifies the FC signed object.
+       This OID appears in the eContentType field of the
+       encapContentInfo object as well as the content-type signed
+       attribute within the signerInfo structure.
+
+   2.  The ASN.1 syntax for the BM-body content, which is the payload
+       signed by the BGP speaker.  The FC content is encoded using the
+       ASN.1 [X.680] Distinguished Encoding Rules (DER) [X.690].
+
+   3.  The steps required to validate a BM-body beyond the validation
+       steps specified in [RFC6488].
+
+1.1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+2.  BM Validation
+
+3.  BM based BGP Path Verification
+
+3.1.  BM Generation
+
+   When one BGP router recives one BGP-UPDATE message, it would generate
+   the FC and BM signed object.  The process of FC generation is in [FC]
+   that one can get more information.  The process of generator of BM
+   SHOULD be split into two part,
+
+   *  generation of BM body.
+
+   *  and generation of BM message.
+
+   The generation time of BM is the same as FC, they are both generated
+   after the process of BGP path selection.
+
+3.2.  BM Verification and Path Verification
+
+4.  Security Considerations
+
+   TODO Security
+
+5.  IANA Considerations
+
+   This document has no IANA actions.
+
+6.  References
+
+6.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+   [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
+              Border Gateway Protocol 4 (BGP-4)", RFC 4271,
+              DOI 10.17487/RFC4271, January 2006,
+              <https://www.rfc-editor.org/rfc/rfc4271>.
+
+   [RFC5652]  Housley, R., "Cryptographic Message Syntax (CMS)", STD 70,
+              RFC 5652, DOI 10.17487/RFC5652, September 2009,
+              <https://www.rfc-editor.org/rfc/rfc5652>.
+
+   [RFC6480]  Lepinski, M. and S. Kent, "An Infrastructure to Support
+              Secure Internet Routing", RFC 6480, DOI 10.17487/RFC6480,
+              February 2012, <https://www.rfc-editor.org/rfc/rfc6480>.
+
+   [RFC6485]  Huston, G., "The Profile for Algorithms and Key Sizes for
+              Use in the Resource Public Key Infrastructure (RPKI)",
+              RFC 6485, DOI 10.17487/RFC6485, February 2012,
+              <https://www.rfc-editor.org/rfc/rfc6485>.
+
+   [RFC6488]  Lepinski, M., Chi, A., and S. Kent, "Signed Object
+              Template for the Resource Public Key Infrastructure
+              (RPKI)", RFC 6488, DOI 10.17487/RFC6488, February 2012,
+              <https://www.rfc-editor.org/rfc/rfc6488>.
+
+   [RFC7908]  Sriram, K., Montgomery, D., McPherson, D., Osterweil, E.,
+              and B. Dickson, "Problem Definition and Classification of
+              BGP Route Leaks", RFC 7908, DOI 10.17487/RFC7908, June
+              2016, <https://www.rfc-editor.org/rfc/rfc7908>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+6.2.  Informative References
+
+   [FC]       Xu, K., Wang, X., Guo, Y., Zhan, J., and J. Wu, "A Profile
+              for Forwarding Commitments (FCs)", June 2023,
+              <https://github.com/BasilGuo/fc-signed-object/>.
+
+   [X.680]    ITU-T, "Information technology -- Abstract Syntax Notation
+              One (ASN.1): Specification of basic notation",
+              Recommendation ITU-T X.680 , February 2021,
+              <https://itu.int/rec/T-REC-X.680-202102-I/en>.
+
+   [X.690]    ITU-T, "Information technology - ASN.1 encoding rules:
+              Specification of Basic Encoding Rules (BER), Canonical
+              Encoding Rules (CER) and Distinguished Encoding Rules
+              (DER)", Recommendation ITU-T X.690 , February 2021,
+              <[https://itu.int/rec/T-REC-X.680-202102-
+              I/en](https://www.itu.int/rec/T-REC-X.690-202102-I/en)>.
+
+Acknowledgments
+
+   TODO acknowledge.
+
+Authors' Addresses
+
+   Ke Xu
+   Tsinghua University
+   Beijing
+   China
+   Email: xuke@tsinghua.edu.cn
+
+
+   Xiaoliang Wang
+   Tsinghua University
+   Beijing
+   China
+   Email: wangxiaoliang0623@foxmail.com
+
+
+   Yangfei Guo
+   Zhongguancun Labratory
+   Beijing
+   China
+   Email: guoyangfei@zgclab.edu.cn
+
+
+   Jiangou Zhan
+   Tsinghua University
+   Beijing
+   China
+   Email: 904542587@qq.com
+
+
+   Jianping Wu
+   Tsinghua University
+   Beijing
+   China
+   Email: jianping@cernet.edu.cn
