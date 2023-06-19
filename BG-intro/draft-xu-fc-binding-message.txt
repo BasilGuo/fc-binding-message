@@ -73,15 +73,27 @@ Table of Contents
 
    1.  Introduction
      1.1.  Requirements Language
-   2.  BM Validation
-   3.  BM based BGP Path Verification
-     3.1.  BM Generation
-     3.2.  BM Verification and Path Verification
-   4.  Security Considerations
-   5.  IANA Considerations
-   6.  References
-     6.1.  Normative References
-     6.2.  Informative References
+   2.  The BM Content-Type
+   3.  The BM eContent
+     3.1.  version
+     3.2.  asidS
+     3.3.  Type Prefix
+       3.3.1.  Element afi
+       3.3.2.  Element address
+       3.3.3.  Element prefixLength
+     3.4.  prefixS
+     3.5.  prefixD
+     3.6.  Type BindingMessage
+       3.6.1.  Element signature
+   4.  BM Validation
+   5.  BM based BGP Path Verification
+     5.1.  BM Generation
+     5.2.  BM Verification and Path Verification
+   6.  Security Considerations
+   7.  IANA Considerations
+   8.  References
+     8.1.  Normative References
+     8.2.  Informative References
    Acknowledgments
    Authors' Addresses
 
@@ -109,18 +121,18 @@ Table of Contents
    relationship between one IP prefix in a BGP-UPDATE message and the
    original announced AS, while BM should list all the generated FCs for
    one IP prefix in a BGP-UPDATE message.  The generated Binding Message
-   is split into two parts, one for the BM body (BM-body) which is a
-   newly signed object, and the other for the BM message (BM-msg) which
-   would be sent to all ASes in the reverse direction of related IP
-   prefix propagation.
+   is split into two parts, one for the BM body which is a newly signed
+   object, and the other for the FCList which includes the ASID of
+   current AS as well as a series of FCID [FC].  The FCList would be
+   sent to all ASes in the reverse direction of related IP prefix
+   propagation.
 
-   The BM-body uses the template for RPKI digitally signed objects
-   [RFC6488] for the definition of a Cryptographic Message Syntax (CMS)
-   [RFC5652] wrapper for the BM-body content as well as a generic
-   validation procedure for RPKI signed objects.  As BM-body needs to be
-   validated with RPKI certificates issued by the current
-   infrastructure, we assume the mandatory-to-implement algorithms in
-   [RFC6485], or its successor.
+   The BM uses the template for RPKI digitally signed objects [RFC6488]
+   for the definition of a Cryptographic Message Syntax (CMS) [RFC5652]
+   wrapper for the BM content as well as a generic validation procedure
+   for RPKI signed objects.  As BM needs to be validated with RPKI
+   certificates issued by the current infrastructure, we assume the
+   mandatory-to-implement algorithms in [RFC6485], or its successor.
 
    To complete the specification of the FC (see Section 4 of [RFC6488]),
    this document defines:
@@ -130,12 +142,12 @@ Table of Contents
        encapContentInfo object as well as the content-type signed
        attribute within the signerInfo structure.
 
-   2.  The ASN.1 syntax for the BM-body content, which is the payload
-       signed by the BGP speaker.  The FC content is encoded using the
-       ASN.1 [X.680] Distinguished Encoding Rules (DER) [X.690].
+   2.  The ASN.1 syntax for the BM content, which is the payload signed
+       by the BGP speaker.  The FC content is encoded using the ASN.1
+       [X.680] Distinguished Encoding Rules (DER) [X.690].
 
-   3.  The steps required to validate a BM-body beyond the validation
-       steps specified in [RFC6488].
+   3.  The steps required to validate a BM beyond the validation steps
+       specified in [RFC6488].
 
 1.1.  Requirements Language
 
@@ -145,11 +157,131 @@ Table of Contents
    BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
-2.  BM Validation
+2.  The BM Content-Type
 
-3.  BM based BGP Path Verification
+   The content-type for a BM is defined as BindingMessage and has the
+   numerical value of 1.2.840.113549.1.9.16.1.(TBD).
 
-3.1.  BM Generation
+   This OID MUST appear both within the eContentType in the
+   encapContentInfo object as well as the content-type signed attribute
+   in the signerInfo object (see [RFC6488]).
+
+3.  The BM eContent
+
+   The content of a BM identifies a binding message and forwarding
+   binding that an AS has selected one AS path to announce to other
+   nodes upon receiving a BGP-UPDATE message.  Other ASes that are on-
+   path can validate the BM and perform path verification for traffic
+   forwarding based on the AS-path information.  Off-path ASes can
+   utilize this BM for collaborative filtering. a BM is an instance of
+   BindingMessageAttestation, formally defined by the following ASN.1
+   [X.680] module:
+
+   RPKI-BM-2023
+     { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1)
+        pkcs-9(9) smime(16) modules(0) id-mod-rpki-BM-2023(TBD) }
+
+   DEFINITIONS EXPLICIT TAGS ::=
+   BEGIN
+
+   IMPORTS
+     CONTENT-TYPE
+     FROM CryptographicMessageSyntax-2010 -- RFC 6268
+       { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1)
+         pkcs-9(9) smime(16) modules(0) id-mod-cms-2009(58) } ;
+
+   id-ct-BM OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840)
+       rsadsi(113549) pkcs(1) pkcs-9(9) id-smime(16) id-ct(1) bm(TDB) }
+
+   ct-BM CONTENT-TYPE ::=
+       { TYPE ForwardingCommitmentAttestation IDENTIFIED BY id-ct-BM }
+
+   ForwardingCommitmentAttestation ::= SEQUENCE {
+       version [0]         INTEGER DEFAULT 0,
+       version
+       asidS               ASID,
+       prefixS             SEQUENCE (SIZE(1..MAX)) OF Prefix,
+       prefixD             SEQUENCE (SIZE(1)) OF Prefix,
+       bm                  BindingMessage
+   }
+
+   ASID ::= INTEGER (0..4294967295)
+
+   Prefix ::= SEQUENCE {
+       afi                 AFI,
+       address             IPAddress,
+       prefixLength        INTEGER (SIZE(0..128))}
+
+   AFI ::= OCTET STRING (SIZE(2))
+
+   IPAddress ::= BIT STRING (SIZE(0..128))
+
+   BindingMessage ::= SEQUENCE {
+       signature           BIT STRING }
+
+   END
+
+                   Figure 1: eContent of BM signed object
+
+   Note that this content appears as the eContent within the
+   encapContentInfo (see [RFC6488]).
+
+3.1.  version
+
+   The version number of the BindingMessageAttestation MUST be 0.
+
+3.2.  asidS
+
+   The asidS field contains the AS number of the AS that generates the
+   BM signed object.
+
+3.3.  Type Prefix
+
+   Within the Prefix structure, the prefix field encodes the set of IP
+   address prefixes.
+
+3.3.1.  Element afi
+
+   Within the Prefix structure, afi contains the Address Family
+   Identifier of an IP address family.  This specification only supports
+   IPv4 and IPv6.  Therefore, afi MUST be either 0001 or 0002.
+
+3.3.2.  Element address
+
+   The address field contains the IP address.
+
+3.3.3.  Element prefixLength
+
+   The prefixLength field contains the length of the IP address prefix.
+
+3.4.  prefixS
+
+   This field is a set of IP prefixes that belongs to the BM gnerating
+   AS according to its local routing policy.  Thus, these IP prefixes
+   are the BM generating AS would like to use when it communicates with
+   the prefix in BGP-UPDATE message.
+
+3.5.  prefixD
+
+   This field is only one IP prefix that contains in BGP-UPDATE message
+   and binds an FC signed object.
+
+3.6.  Type BindingMessage
+
+   Within the BindingMessage structure, the bm field encodes the binding
+   message generated by this current AS and will be validated by other
+   AS.
+
+3.6.1.  Element signature
+
+   The signature field is a signature signed by the BGP speaker who
+   issues this BM.
+
+4.  BM Validation
+
+5.  BM based BGP Path Verification
+
+5.1.  BM Generation
 
    When one BGP router recives one BGP-UPDATE message, it would generate
    the FC and BM signed object.  The process of FC generation is in [FC]
@@ -163,19 +295,19 @@ Table of Contents
    The generation time of BM is the same as FC, they are both generated
    after the process of BGP path selection.
 
-3.2.  BM Verification and Path Verification
+5.2.  BM Verification and Path Verification
 
-4.  Security Considerations
+6.  Security Considerations
 
    TODO Security
 
-5.  IANA Considerations
+7.  IANA Considerations
 
    This document has no IANA actions.
 
-6.  References
+8.  References
 
-6.1.  Normative References
+8.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -214,7 +346,7 @@ Table of Contents
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
 
-6.2.  Informative References
+8.2.  Informative References
 
    [FC]       Xu, K., Wang, X., Guo, Y., Zhan, J., and J. Wu, "A Profile
               for Forwarding Commitments (FCs)", June 2023,
