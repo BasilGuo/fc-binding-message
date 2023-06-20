@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2023-06-18T00:32:44.815622+00:00",
+  "timestamp": "2023-06-20T00:28:07.246624+00:00",
   "repo": "BasilGuo/fc-binding-message",
   "labels": [
     {
@@ -50,5 +50,60 @@
     }
   ],
   "issues": [],
-  "pulls": []
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDOJwoius5TT7fO",
+      "title": "update: introduction and framework",
+      "url": "https://github.com/BasilGuo/fc-binding-message/pull/1",
+      "state": "MERGED",
+      "author": "BasilGuo",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-06-19T08:02:57Z",
+      "updatedAt": "2023-06-19T10:19:19Z",
+      "baseRepository": "BasilGuo/fc-binding-message",
+      "baseRefName": "main",
+      "baseRefOid": "01004e0b49cb924c619633e391b9d73e4f21d125",
+      "headRepository": "BasilGuo/fc-binding-message",
+      "headRefName": "BG-intro",
+      "headRefOid": "496e61eedd327c3fd35dbef402f1738452b17171",
+      "closedAt": "2023-06-19T10:19:18Z",
+      "mergedAt": "2023-06-19T10:19:18Z",
+      "mergedBy": "BasilGuo",
+      "mergeCommit": {
+        "oid": "4574855640fe844824a7dc5611182f18510c5c4b"
+      },
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 2,
+      "id": "PR_kwDOJwoius5TWmXt",
+      "title": "Zjo revise",
+      "url": "https://github.com/BasilGuo/fc-binding-message/pull/2",
+      "state": "OPEN",
+      "author": "ZJOJZ",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-06-19T15:22:49Z",
+      "updatedAt": "2023-06-19T15:22:49Z",
+      "baseRepository": "BasilGuo/fc-binding-message",
+      "baseRefName": "main",
+      "baseRefOid": "4574855640fe844824a7dc5611182f18510c5c4b",
+      "headRepository": "BasilGuo/fc-binding-message",
+      "headRefName": "zjo-revise",
+      "headRefOid": "1ec6128bb204ba1aed0684da7068638f1eab7b66",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    }
+  ]
 }
