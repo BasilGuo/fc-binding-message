@@ -92,7 +92,7 @@ informative:
 
 --- abstract
 
-This documents defines a standard profile for Binding Messages (BM) used in Resource Public Key Infrastructure (RPKI). A BM is a digitally signed object that provides a means of verifying that an IP address prefix announced from `AS a` to `AS b` and selected by `AS b`. When validated, a BM's eContent can be used for the detection and mitigation of route hijacking and provide protection for the AS_PATH attribute in BGP-UPDATE.
+This document defines a standard profile for Binding Messages (BM) used in Resource Public Key Infrastructure (RPKI). A BM is a digitally signed object that provides a means of verifying that an IP address prefix announced from `AS a` to `AS b` and selected by `AS b`. When validated, a BM's eContent can be used for the detection and mitigation of route hijacking and provide protection for the AS_PATH attribute in BGP-UPDATE.
 
 
 --- middle
@@ -105,12 +105,12 @@ The primary purpose of the Resource Public Key Infrastructure (RPKI) is to impro
 
 Binding Message (BM) is a signed object that binds the IP prefix with its announced AS's Paths, eventually, it could compose, verify, and protect the forwarding path of traffic. It should together use with Forwarding Commitments {{FC}} which is a signed object used in the control plane to protect BGP routing. BM is used for concatenating all ASes on the announced path. It means that FC should provide the relationship between one IP prefix in a BGP-UPDATE message and the original announced AS, while BM should list all the generated FCs for one IP prefix in a BGP-UPDATE message. The generated Binding Message is split into two parts, one for the BM body which is a newly signed object, and the other for the FCList which includes the BMID as well as a series of FCID {{FC}}. The FCList would be sent to all ASes in the reverse direction of related IP prefix propagation.
 
-The BM uses the template for RPKI digitally signed objects {{RFC6488}} for the definition of a Cryptographic Message Syntax (CMS) {{RFC5652}} wrapper for the BM content as well as a generic validation procedure for RPKI signed objects.  As BM needs to be validated with RPKI certificates issued by the current infrastructure, we assume the mandatory-to-implement algorithms in {{RFC6485}}, or its successor.
+The BM uses the template for RPKI digitally signed objects {{RFC6488}} for the definition of a Cryptographic Message Syntax (CMS) {{RFC5652}} wrapper for the BM content as well as a generic validation procedure for RPKI signed objects.  As BM needs to be validated with RPKI certificates issued by the current infrastructure, we assume the mandatory-to-implement algorithms in {{RFC6485}} or its successor.
 
-To complete the specification of the FC (see {{Section 4 of RFC6488}}), this document defines:
+To complete the specification of the BM (see {{Section 4 of RFC6488}}), this document defines:
 
-1.  The object identifier (OID) that identifies the FC signed object. This OID appears in the eContentType field of the encapContentInfo object as well as the content-type signed attribute within the signerInfo structure.
-2.  The ASN.1 syntax for the BM content, which is the payload signed by the BGP speaker. The FC content is encoded using the ASN.1 {{X.680}} Distinguished Encoding Rules (DER) {{X.690}}.
+1.  The object identifier (OID) that identifies the BM signed object. This OID appears in the eContentType field of the encapContentInfo object as well as the content-type signed attribute within the signerInfo structure.
+2.  The ASN.1 syntax for the BM content, which is the payload signed by the BGP speaker. The BM content is encoded using the ASN.1 {{X.680}} Distinguished Encoding Rules (DER) {{X.690}}.
 3.  The steps required to validate a BM beyond the validation steps specified in {{RFC6488}}.
 
 
@@ -204,11 +204,11 @@ The prefixLength field contains the length of the IP address prefix.
 
 ## prefixS
 
-This field is a set of IP prefixes that belongs to the BM gnerating AS according to its local routing policy. Thus, these IP prefixes are the BM generating AS would like to use when it communicates with the prefix in BGP-UPDATE message.
+This field is a set of IP prefixes that belongs to the BM generating AS according to its local routing policy. Thus, these IP prefixes are the BM generating AS would like to use when it communicates with the prefix in the BGP-UPDATE message.
 
 ## prefixD
 
-This field is only one IP prefix that contains in BGP-UPDATE message and binds an FC signed object.
+This field is only one IP prefix that contains in the BGP-UPDATE message and binds an FC signed object.
 
 
 ## Type BindingMessage
@@ -221,36 +221,43 @@ The id field contains the hash of the previous AS-path in the associated BGP-UPD
 
 ### Element signature
 
-The signature field is a signature signed by the BGP speaker who issues this BM. This field should also signs the contents of FCList which would not be synchronized by RPKI.
+The signature field is a signature signed by the BGP speaker who issues this BM. This field should also sign the contents of FCList which would not be synchronized by RPKI.
 
 
 #  BM Validation
 
 Before a relying party can sign a new BM to announce it has trusted and selected the forwarding path, the relying party MUST first validate the BM signed object itself. To validate a BM, the relying party MUST perform all the validation checks specified in [RFC6488] as well as the following additional BM-specific validation step.
 
-<!-- TODO: I don't know it should be prefixS or prefixD -->
-The IP Address Delegation extension [RFC3779] is present in the end-entity (EE) certificate (contained within the BM), and IP address prefix (just only prefixS) in the BM payload is contained within the set of IP addresses specified by the EE certificate's IP Address Delegation extension.
+<!-- TODO: I don't know if it should be prefixS or prefixD. Need further discussion. -->
+The IP Address Delegation extension [RFC3779] is present in the end-entity (EE) certificate (contained within the BM), and the IP address prefix (just only prefixS) in the BM payload is contained within the set of IP addresses specified by the EE certificate's IP Address Delegation extension.
 The EE certificate's IP Address Delegation extension MUST NOT contain "inherit" elements described in [RFC3779].
 The Autonomous System Identifier Delegation Extension described in [RFC3779] is also used in Binding Message and MUST be present in the EE certificate.
 
 
-#  BM based BGP Path Verification
+#  BM-based BGP Path Verification
 
 ## FCList Generation
 
-FCList contains a BMID as well as a set of FCIDs that relate to a Binding Message. FCList has a one-to-one relationship to BM. That means the BGP router generate BM and FCList as a pair, but they would not all be placed at RPKI.
+FCList contains a BMID as well as a set of FCIDs that relate to a Binding Message. FCList has a one-to-one relationship with BM. That means the BGP router generates BM and FCList as a pair, but they would not all be placed at RPKI.
 
-FCList would not be synchronized by RPKI. It would use TCP and Transport Layer Security (TLS) to send the FCList to peers. And the peers MUST store these receiving FCLists until RPKI synchronized and relative BM verified.
+As it is private data that consist of the AS_PATH information, FCList would not be synchronized through RPKI. Otherwise, adversarial ASes may lunch an attack and get the path information.
 
-The generation time of FCList is the same as BM generation time.
+It SHOULD use TCP and Transport Layer Security (TLS) or other end-to-end communication techniques to send the FCList to on-path ASes in an off-pathway. And these ASes MUST store receiving FCLists until RPKI is synchronized and relative BM is verified.
+
+<!-- We MAY need another draft to describe it -->
+The process of FCList is TBD.
+
+The generation time of FCList is the same as the BM generation time.
+
+By FCList, we also could get a path-aware network.
 
 ##  BM Generation
 
-When one AS establishes a connection with its peer, it announces its route to peers. When one BGP router recives one BGP-UPDATE message, it would generate the FC and BM signed object for each IP prefix in the BGP-UPDATE message. The generation time of BM is the same as FC, they are both generated after the process of BGP path selection.
+When one AS establishes a connection with its peer, it announces its route to this peer. When one BGP router receives one BGP-UPDATE message, it would generate the FC and BM signed object for each IP prefix in the BGP-UPDATE message. The generation time of BM is the same as FC, they are both generated after the process of BGP path selection.
 
 The process of FC generation is in {{FC}} from which one can get more information.
 
-The process of generator of BM SHOULD be split into two part,
+The process of the generator of BM SHOULD be split into two parts,
 
 - generation of BM which is the signed object,
 - and generation of FCList which contains a BMID and a set of FCIDs.
@@ -276,11 +283,11 @@ Network           Next Hop        Path
 ~~~~~~
 {: #fig-rib-of-AS65536 title="Simplified RIB table of AS 65536"}
 
-Let's take the announcement of prefix 2001:db8:d::/48 as the example.
+Let's take the announcement of the prefix 2001:db8:d::/48 as an example.
 
-First, BGP router of AS 65539 generates one FC `FC_{65539, 65538}` when it announces the prefix to AS 65538.
+First, the BGP router of AS 65539 generates one FC `FC_{65539, 65538}` when it announces the prefix to AS 65538.
 
-Then, the BGP router in AS 65538 would generate one FC `FC_{65539, 65538, 65537}`, one BM, and one FCList after receiving the BGP-UPDATE message. The new generated FC and BM would be placed at RPKI repository, but the FCList which contains the asid of AS 65538 and the FCID of the FC, i.e. `{BMID1, {FC_{65539, 65538}_id}}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65539. And the BGP-UPDATE would also announce to AS 65537. For BM generated by BGP router of AS 65538, it fills the eContent of BM signed object as follows:
+Then, the BGP router in AS 65538 would generate one FC `FC_{65539, 65538, 65537}`, one BM, and one FCList after receiving the BGP-UPDATE message. The newly generated FC and BM would be placed at the RPKI repository, but the FCList which contains the ASID of AS 65538 and the FCID of the FC, i.e. `{BMID1, {FC_{65539, 65538}_id}}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65539. And the BGP-UPDATE would also announce to AS 65537. For BM generated by the BGP router of AS 65538, it fills the eContent of BM signed object as follows:
 
 ~~~~~~
 BM_{65538, 65539}:
@@ -300,7 +307,7 @@ BM_{65538, 65539}:
 ~~~~~~
 
 
-Next, the BGP router in AS 65537 would generate one FC `FC_{65539, 65538, 65537, 65536}`, one BM, and one FCList after receiving the BGP-UPDATE message. The new generated FC and BM would be placed at RPKI repository, but the FCList which contains the asid of AS 65537 and the FCIDs of the two FCs, i.e. `{BMID2, {FC_{65539, 65538}_id, FC_{65539, 65538, 65537}_id}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65538 and AS 65539 independently. And the BGP-UPDATE would also announce to AS 65536. For BM generated by the BGP router of AS 65537, it fills the eContent of BM signed object as follows:
+Next, the BGP router in AS 65537 would generate one FC `FC_{65539, 65538, 65537, 65536}`, one BM, and one FCList after receiving the BGP-UPDATE message. The newly generated FC and BM would be placed at the RPKI repository, but the FCList which contains the ASID of AS 65537 and the FCIDs of the two FCs, i.e. `{BMID2, {FC_{65539, 65538}_id, FC_{65539, 65538, 65537}_id}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65538 and AS 65539 independently. And the BGP-UPDATE would also announce to AS 65536. For BM generated by the BGP router of AS 65537, it fills the eContent of BM signed object as follows:
 
 ~~~~~~
 BM_{65537, 65538, 65539}:
@@ -319,7 +326,7 @@ BM_{65537, 65538, 65539}:
     signature: SIGNATURE2
 ~~~~~~
 
-Finally, the BGP router in AS 65536 would generate one BM and one FCList after receiving the BGP-UPDATE message. The new generated BM would be placed at RPKI repository, but the FCList which contains the asid of AS 65536 and the FCIDs of the three FCs, i.e. `{BMID3, {FC_{65539, 65538}_id, FC_{65539, 65538, 65537}_id, FC_{65539, 65538, 65537, 65536}_id}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65537, AS 65538, and AS 65539. For BM generated by BGP router of AS 65537, it fills the eContent of BM signed object as follows:
+Finally, the BGP router in AS 65536 would generate one BM and one FCList after receiving the BGP-UPDATE message. The newly generated BM would be placed at the RPKI repository, but the FCList which contains the ASID of AS 65536 and the FCIDs of the three FCs, i.e. `{BMID3, {FC_{65539, 65538}_id, FC_{65539, 65538, 65537}_id, FC_{65539, 65538, 65537, 65536}_id}`, would be sent to the ASes on the BGP-UPDATE propagation path, which means the FCList would be sent to AS 65537, AS 65538, and AS 65539. For BM generated by the BGP router of AS 65537, it fills the eContent of BM signed object as follows:
 
 ~~~~~~
 BM_{65536, 65537, 65538, 65539}:
@@ -338,13 +345,13 @@ BM_{65536, 65537, 65538, 65539}:
     signature: SIGNATURE3
 ~~~~~~
 
-## BM Verification and Path Verification
+## Filtering Rules Generation
 
 When one AS receives one BGP-UPDATE, it MUST do as usual: filter the BGP route using its local policy, scratch the BGP route to its Route Information Base (RIB) table, generate Forwarding Information Base (FIB) table, and send it out as per the routing policy.
 
 When the BM and FC signed objects synchronize from the RPKI repository, the BGP speaker MUST first verify FCs. According to the verified FCs, the router then could verify the BMs. It SHOULD find FCList by the id field of one BM. Then it gets all the FCIDs in the FCList. Based on previous verified FCs, it could know which prefix is received as it announces.
 
-It RECOMMENDs deleting all the invalid RIB items to instruct the traffic forwarding. If all the BMs are valid, the forwarding plane would be a valid one, and path verification is complete.
+It RECOMMENDs deleting all the invalid RIB items to instruct the traffic forwarding. If all the FCs and BMs are valid, the forwarding plane would be a valid one, and source validation and path verification are complete.
 
 
 # IANA Considerations
@@ -381,6 +388,12 @@ Message  1.2.840.113549.1.9.16.1.TBD  [RFC-to-be]
 ~~~~~~
 
 --- back
+
+## TCP Port registry
+
+This mechanism requires a TCP port to listen to and receive the FCList message from the on-path ASes.
+
+TBD.
 
 # Security Consideration
 
